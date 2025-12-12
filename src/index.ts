@@ -63,11 +63,11 @@ const s3Client = new S3Client({
   ...(env.S3_ENDPOINT && { endpoint: env.S3_ENDPOINT }),
   ...(env.S3_ACCESS_KEY_ID &&
     env.S3_SECRET_ACCESS_KEY && {
-    credentials: {
-      accessKeyId: env.S3_ACCESS_KEY_ID,
-      secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-    },
-  }),
+      credentials: {
+        accessKeyId: env.S3_ACCESS_KEY_ID,
+        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+      },
+    }),
   forcePathStyle: env.S3_FORCE_PATH_STYLE,
 });
 
@@ -99,7 +99,13 @@ app.use(
   cors({
     origin: env.CORS_ORIGINS,
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "X-Request-ID", "traceparent", "tracestate"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Request-ID",
+      "traceparent",
+      "tracestate",
+    ],
     exposeHeaders: [
       "X-Request-ID",
       "X-RateLimit-Limit",
@@ -273,7 +279,10 @@ const JobStatusResponseSchema = z
       .min(0)
       .max(100)
       .openapi({ description: "Progress percentage (0-100)" }),
-    totalFiles: z.number().int().openapi({ description: "Total files to process" }),
+    totalFiles: z
+      .number()
+      .int()
+      .openapi({ description: "Total files to process" }),
     result: z
       .object({
         successCount: z.number().int(),
@@ -754,9 +763,7 @@ app.openapi(jobStatusRoute, async (c) => {
       progress: typeof progress === "number" ? progress : 0,
       totalFiles: job.data.file_ids.length,
       result:
-        status === "completed" || status === "failed"
-          ? returnvalue
-          : null,
+        status === "completed" || status === "failed" ? returnvalue : null,
     },
     200,
   );
@@ -769,7 +776,15 @@ app.post("/v1/error/test", (c) => {
   const error = new Error("Test backend error for Sentry demonstration");
   c.get("sentry").captureException(error);
   console.error(`[Error Test] Request ${requestId}:`, error.message);
-  return c.json({ error: "Internal Server Error", message: "Test error triggered", requestId, sentryReported: true }, 500);
+  return c.json(
+    {
+      error: "Internal Server Error",
+      message: "Test error triggered",
+      requestId,
+      sentryReported: true,
+    },
+    500,
+  );
 });
 
 // OpenAPI spec endpoint (disabled in production)
@@ -816,8 +831,8 @@ const gracefulShutdown = (server: ServerType) => (signal: string) => {
   });
 };
 
-app.get('/metrics', async (c) => {
-  c.header('Content-Type', register.contentType);
+app.get("/metrics", async (c) => {
+  c.header("Content-Type", register.contentType);
   return c.body(await register.metrics());
 });
 

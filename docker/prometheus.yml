@@ -2,7 +2,7 @@ global:
   scrape_interval: 5s
 
 scrape_configs:
-  - job_name: 'delineate-app'
+  - job_name: "delineate-app"
     static_configs:
-      - targets: ['delineate-app:3000']
-    metrics_path: '/metrics'
+      - targets: ["delineate-app:3000"]
+    metrics_path: "/metrics"

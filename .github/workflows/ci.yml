@@ -60,7 +60,7 @@ jobs:
           # Install mc (MinIO Client)
           curl https://dl.min.io/client/mc/release/linux-amd64/mc --create-dirs -o /usr/local/bin/mc
           chmod +x /usr/local/bin/mc
-          
+
           # Configure and create bucket
           mc alias set myminio http://minio:9000 minioadmin minioadmin
           mc mb myminio/downloads

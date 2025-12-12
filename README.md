@@ -89,6 +89,7 @@ curl http://localhost:3000/v1/download/jobs/{jobId}
 ### Frontend Dashboard
 
 Visit **http://localhost:5173** to see:
+
 - Real-time job progress bars
 - Async job queue demonstration
 - Distributed tracing visualization
@@ -98,13 +99,13 @@ Visit **http://localhost:5173** to see:
 
 ## Hackathon Challenges - ✅ ALL COMPLETED
 
-| Challenge                           | Max Points | Status | Implementation |
-| ----------------------------------- | ---------- | ------ | -------------- |
-| Challenge 1: S3 Storage Integration | 15         | ✅ **DONE** | MinIO with auto-bucket creation |
-| Challenge 2: Architecture Design    | 15         | ✅ **DONE** | Full async job queue implementation |
-| Challenge 3: CI/CD Pipeline         | 10         | ✅ **DONE** | GitHub Actions with E2E tests |
+| Challenge                           | Max Points | Status      | Implementation                                         |
+| ----------------------------------- | ---------- | ----------- | ------------------------------------------------------ |
+| Challenge 1: S3 Storage Integration | 15         | ✅ **DONE** | MinIO with auto-bucket creation                        |
+| Challenge 2: Architecture Design    | 15         | ✅ **DONE** | Full async job queue implementation                    |
+| Challenge 3: CI/CD Pipeline         | 10         | ✅ **DONE** | GitHub Actions with E2E tests                          |
 | Challenge 4: Observability (Bonus)  | 10         | ✅ **DONE** | Full stack: Sentry, OpenTelemetry, Grafana, Prometheus |
-| **Total**                           | **50**     | **50/50** | **Production-Ready** |
+| **Total**                           | **50**     | **50/50**   | **Production-Ready**                                   |
 
 ---
 
@@ -464,6 +465,7 @@ Errors in Sentry tagged with: trace_id=abc123
 ## Tech Stack
 
 ### Backend
+
 - **Runtime**: Node.js 24 with native TypeScript support
 - **Framework**: [Hono](https://hono.dev) - Ultra-fast web framework
 - **Validation**: [Zod](https://zod.dev) with OpenAPI integration
@@ -472,6 +474,7 @@ Errors in Sentry tagged with: trace_id=abc123
 - **Documentation**: Scalar OpenAPI UI
 
 ### Observability
+
 - **Tracing**: OpenTelemetry (frontend + backend)
 - **Metrics**: Prometheus + Grafana
 - **Logs**: Elasticsearch + Kibana (ELK Stack)
@@ -479,6 +482,7 @@ Errors in Sentry tagged with: trace_id=abc123
 - **APM**: Distributed tracing with trace correlation
 
 ### Frontend
+
 - **Framework**: React 19 + TypeScript
 - **Build Tool**: Vite 7
 - **Styling**: Tailwind CSS 4
@@ -562,21 +566,22 @@ DOWNLOAD_DELAY_MAX_MS=200000
 
 ### Core Endpoints
 
-| Method | Endpoint                | Description                         |
-| ------ | ----------------------- | ----------------------------------- |
-| GET    | `/`                     | Welcome message                     |
-| GET    | `/health`               | Health check with storage status    |
-| GET    | `/metrics`              | Prometheus metrics endpoint         |
-| GET    | `/docs`                 | Scalar OpenAPI documentation (dev)  |
+| Method | Endpoint   | Description                        |
+| ------ | ---------- | ---------------------------------- |
+| GET    | `/`        | Welcome message                    |
+| GET    | `/health`  | Health check with storage status   |
+| GET    | `/metrics` | Prometheus metrics endpoint        |
+| GET    | `/docs`    | Scalar OpenAPI documentation (dev) |
 
 ### Job Queue Endpoints (Async Polling)
 
-| Method | Endpoint                      | Description                              |
-| ------ | ----------------------------- | ---------------------------------------- |
-| POST   | `/v1/download/initiate`       | ⚡ Initiate async job (returns jobId)   |
-| GET    | `/v1/download/jobs/:jobId`    | 📊 Poll job status and progress         |
+| Method | Endpoint                   | Description                           |
+| ------ | -------------------------- | ------------------------------------- |
+| POST   | `/v1/download/initiate`    | ⚡ Initiate async job (returns jobId) |
+| GET    | `/v1/download/jobs/:jobId` | 📊 Poll job status and progress       |
 
 **Example Flow:**
+
 ```bash
 # 1. Initiate job
 POST /v1/download/initiate {"file_ids": [70000, 70007]}
@@ -593,10 +598,10 @@ GET /v1/download/jobs/abc-123
 
 ### Legacy Endpoints (Synchronous)
 
-| Method | Endpoint                | Description                         |
-| ------ | ----------------------- | ----------------------------------- |
-| POST   | `/v1/download/check`    | Check single file availability      |
-| POST   | `/v1/download/start`    | Start download with simulated delay |
+| Method | Endpoint             | Description                         |
+| ------ | -------------------- | ----------------------------------- |
+| POST   | `/v1/download/check` | Check single file availability      |
+| POST   | `/v1/download/start` | Start download with simulated delay |
 
 > **⚠️ Note:** Legacy endpoints may timeout on long requests. Use job queue endpoints for production.
 
@@ -632,7 +637,7 @@ npm run docker:prod  # Start with Docker (production)
 
 ## Project Structure
 
-```
+````
 .
 ├── src/
 │   └── index.ts          # Main application entry point
@@ -673,7 +678,7 @@ npm run lint
 # Run E2E tests (requires Docker)
 npm run docker:dev &
 npm run test:e2e
-```
+````
 
 ### Observability Dashboard (Bonus)
 
@@ -687,6 +692,7 @@ The React dashboard allows you to monitor API health, trigger long-running downl
   - **Metric Links**: Direct access to Grafana/Kibana (local).
 
 **Tech Stack**:
+
 - **Metrics**: Prometheus & Grafana
 - **Logs/Traces**: Elasticsearch & Kibana (ELK)
 - **Object Storage**: MinIO
@@ -703,6 +709,7 @@ npm run dev
 ├── package.json
 ├── tsconfig.json
 └── eslint.config.mjs
+
 ```
 
 ## Security Features
@@ -718,3 +725,4 @@ npm run dev
 ## License
 
 MIT
+```
