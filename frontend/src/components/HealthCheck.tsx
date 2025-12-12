@@ -22,6 +22,9 @@ export function HealthCheck() {
                 const data = await response.json();
                 setHealth(data);
                 setError(null);
+
+                // Track this API call
+                window.dispatchEvent(new CustomEvent('api-call', { detail: { type: 'download' } }));
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Unknown error');
                 setHealth(null);
@@ -30,12 +33,8 @@ export function HealthCheck() {
             }
         };
 
-        // Initial fetch
+        // Check health once on page load
         fetchHealth();
-
-        // Poll every 5 seconds
-        const interval = setInterval(fetchHealth, 5000);
-        return () => clearInterval(interval);
     }, []);
 
     if (loading && !health) {

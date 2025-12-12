@@ -2,6 +2,7 @@ import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { SimpleSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch';
+import { W3CTraceContextPropagator } from '@opentelemetry/core';
 
 // Initialize Tracing
 export const initInstrumentation = () => {
@@ -18,7 +19,12 @@ export const initInstrumentation = () => {
 
         if (typeof provider.addSpanProcessor === 'function') {
             provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
-            provider.register();
+
+            // Set propagator for trace context
+            provider.register({
+                propagator: new W3CTraceContextPropagator(),
+            });
+
             console.log('OTel registered successfully');
         } else {
             console.error('provider.addSpanProcessor is not a function. Provider keys:', Object.keys(provider));
@@ -29,6 +35,12 @@ export const initInstrumentation = () => {
                 new FetchInstrumentation({
                     propagateTraceHeaderCorsUrls: [/.+/g],
                     clearTimingResources: true,
+                    applyCustomAttributesOnSpan: (span, request) => {
+                        // Tag spans with correlation info
+                        const spanContext = span.spanContext();
+                        const url = typeof request === 'object' && 'url' in request ? (request as any).url : 'unknown';
+                        console.log(`[Trace] ${url} - TraceID: ${spanContext.traceId}`);
+                    },
                 }),
             ],
         });
@@ -36,5 +48,4 @@ export const initInstrumentation = () => {
         console.error('Failed to initialize OpenTelemetry:', err);
     }
 };
-
 

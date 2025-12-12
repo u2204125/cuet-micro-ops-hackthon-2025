@@ -765,6 +765,16 @@ app.openapi(jobStatusRoute, async (c) => {
   );
 });
 
+// Error test endpoint for demonstrating error tracking
+app.post("/v1/error/test", (c) => {
+  // @ts-expect-error - Hono context variables are not strictly typed with OpenAPIHono
+  const requestId = c.get("requestId");
+  const error = new Error("Test backend error for Sentry demonstration");
+  c.get("sentry").captureException(error);
+  console.error(`[Error Test] Request ${requestId}:`, error.message);
+  return c.json({ error: "Internal Server Error", message: "Test error triggered", requestId, sentryReported: true }, 500);
+});
+
 // OpenAPI spec endpoint (disabled in production)
 if (env.NODE_ENV !== "production") {
   app.doc("/openapi", {

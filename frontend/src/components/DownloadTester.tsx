@@ -17,10 +17,13 @@ export function DownloadTester() {
             const response = await fetch(`${apiUrl}/v1/download/initiate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ file_ids: [70000, 70007, 70014, 70021] }) // Multiple files for demo
+                body: JSON.stringify({ file_ids: [70000, 70007, 70014, 70021] })
             });
             const data = await response.json();
             setJobId(data.jobId);
+
+            // Track this API call
+            window.dispatchEvent(new CustomEvent('api-call', { detail: { type: 'download' } }));
         } catch (error) {
             console.error(error);
         } finally {
@@ -35,7 +38,6 @@ export function DownloadTester() {
     const isActive = initiating || isPolling;
     const showProgress = jobStatus && (jobStatus.status === 'processing' || jobStatus.status === 'queued');
     const isComplete = jobStatus?.status === 'completed';
-    const hasFailed = jobStatus?.status === 'failed';
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
