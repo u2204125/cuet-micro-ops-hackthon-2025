@@ -741,7 +741,6 @@ app.openapi(jobStatusRoute, async (c) => {
   // Get job state and progress
   const state = await job.getState();
   const progress = job.progress as number;
-  const failedReason = job.failedReason;
   const returnvalue = job.returnvalue;
 
   // Map BullMQ state to our status

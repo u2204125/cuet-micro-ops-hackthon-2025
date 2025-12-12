@@ -6,13 +6,13 @@
 
 ## 📊 Challenge Status: ALL COMPLETED ✅
 
-| Challenge | Points | Status | Implementation |
-|-----------|--------|--------|---------------|
-| Challenge 1: S3 Storage | 15 | ✅ **DONE** | MinIO with auto-bucket creation |
-| Challenge 2: Architecture Design | 15 | ✅ **DONE** | Redis + BullMQ async job queue |
-| Challenge 3: CI/CD Pipeline | 10 | ✅ **DONE** | GitHub Actions with E2E tests |
-| Challenge 4: Observability | 10 | ✅ **DONE** | Sentry, OpenTelemetry, Grafana, Prometheus |
-| **Total** | **50** | **50/50** | **Production-Ready** |
+| Challenge                        | Points | Status      | Implementation                             |
+| -------------------------------- | ------ | ----------- | ------------------------------------------ |
+| Challenge 1: S3 Storage          | 15     | ✅ **DONE** | MinIO with auto-bucket creation            |
+| Challenge 2: Architecture Design | 15     | ✅ **DONE** | Redis + BullMQ async job queue             |
+| Challenge 3: CI/CD Pipeline      | 10     | ✅ **DONE** | GitHub Actions with E2E tests              |
+| Challenge 4: Observability       | 10     | ✅ **DONE** | Sentry, OpenTelemetry, Grafana, Prometheus |
+| **Total**                        | **50** | **50/50**   | **Production-Ready**                       |
 
 ---
 
@@ -98,13 +98,13 @@ Our React-based observability dashboard provides real-time monitoring and testin
 
 ### Components
 
-| Component | Description |
-|-----------|-------------|
-| **HealthCheck** | Real-time API health status from `/health` endpoint |
-| **DownloadTester** | Async job queue demo with progress tracking |
-| **ErrorLogger** | Error tracking with Sentry integration |
-| **ObservabilityLinks** | Links to Grafana, Prometheus, Kibana, MinIO |
-| **TraceViewer** | Distributed tracing visualization |
+| Component              | Description                                         |
+| ---------------------- | --------------------------------------------------- |
+| **HealthCheck**        | Real-time API health status from `/health` endpoint |
+| **DownloadTester**     | Async job queue demo with progress tracking         |
+| **ErrorLogger**        | Error tracking with Sentry integration              |
+| **ObservabilityLinks** | Links to Grafana, Prometheus, Kibana, MinIO         |
+| **TraceViewer**        | Distributed tracing visualization                   |
 
 ### Features
 
@@ -128,31 +128,32 @@ Our React-based observability dashboard provides real-time monitoring and testin
 
 ### Core Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Welcome message |
-| GET | `/health` | Health check with storage status |
-| GET | `/metrics` | Prometheus metrics endpoint |
-| GET | `/docs` | OpenAPI documentation (dev) |
+| Method | Endpoint   | Description                      |
+| ------ | ---------- | -------------------------------- |
+| GET    | `/`        | Welcome message                  |
+| GET    | `/health`  | Health check with storage status |
+| GET    | `/metrics` | Prometheus metrics endpoint      |
+| GET    | `/docs`    | OpenAPI documentation (dev)      |
 
 ### Job Queue Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/v1/download/initiate` | ⚡ Initiate async job |
-| GET | `/v1/download/jobs/:jobId` | 📊 Poll job status |
+| Method | Endpoint                   | Description           |
+| ------ | -------------------------- | --------------------- |
+| POST   | `/v1/download/initiate`    | ⚡ Initiate async job |
+| GET    | `/v1/download/jobs/:jobId` | 📊 Poll job status    |
 
 ### Error Testing
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/v1/error/test` | Trigger test error for Sentry |
+| Method | Endpoint         | Description                   |
+| ------ | ---------------- | ----------------------------- |
+| POST   | `/v1/error/test` | Trigger test error for Sentry |
 
 ---
 
 ## 🛠 Tech Stack
 
 ### Backend
+
 - **Runtime**: Node.js 24 with native TypeScript
 - **Framework**: [Hono](https://hono.dev) - Ultra-fast web framework
 - **Validation**: [Zod](https://zod.dev) with OpenAPI
@@ -160,6 +161,7 @@ Our React-based observability dashboard provides real-time monitoring and testin
 - **Job Queue**: Redis + [BullMQ](https://docs.bullmq.io/)
 
 ### Observability
+
 - **Tracing**: OpenTelemetry (frontend + backend)
 - **Metrics**: Prometheus + Grafana
 - **Logs**: Elasticsearch + Kibana
