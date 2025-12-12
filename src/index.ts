@@ -13,6 +13,7 @@ import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import { rateLimiter } from "hono-rate-limiter";
+import { register } from "prom-client";
 import { downloadQueue, shutdownQueue } from "./queue.ts";
 
 // Helper for optional URL that treats empty string as undefined
@@ -538,7 +539,7 @@ app.openapi(downloadInitiateRoute, async (c) => {
   );
 
   console.log(
-    `[API] Created download job ${jobId} with ${file_ids.length} files`,
+    `[API] Created download job ${jobId} with ${String(file_ids.length)} files`,
   );
 
   return c.json(
@@ -754,11 +755,7 @@ app.openapi(jobStatusRoute, async (c) => {
       totalFiles: job.data.file_ids.length,
       result:
         status === "completed" || status === "failed"
-          ? returnvalue || {
-            successCount: 0,
-            failedCount: job.data.file_ids.length,
-            message: failedReason || "Job failed",
-          }
+          ? returnvalue
           : null,
     },
     200,
@@ -768,7 +765,7 @@ app.openapi(jobStatusRoute, async (c) => {
 // Error test endpoint for demonstrating error tracking
 app.post("/v1/error/test", (c) => {
   // @ts-expect-error - Hono context variables are not strictly typed with OpenAPIHono
-  const requestId = c.get("requestId");
+  const requestId = c.get("requestId") as string;
   const error = new Error("Test backend error for Sentry demonstration");
   c.get("sentry").captureException(error);
   console.error(`[Error Test] Request ${requestId}:`, error.message);
@@ -819,16 +816,9 @@ const gracefulShutdown = (server: ServerType) => (signal: string) => {
   });
 };
 
-// Prometheus Metrics
-import { register } from 'prom-client';
-
 app.get('/metrics', async (c) => {
-  try {
-    c.header('Content-Type', register.contentType);
-    return c.body(await register.metrics());
-  } catch (err) {
-    return c.text('Internal Server Error', 500);
-  }
+  c.header('Content-Type', register.contentType);
+  return c.body(await register.metrics());
 });
 
 // Start server

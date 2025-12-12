@@ -1,6 +1,7 @@
-import { Queue, Worker, type Job } from "bullmq";
-import { z } from "zod";
+import type { Job } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
+import { z } from "zod";
 
 // Job data schema
 export const DownloadJobDataSchema = z.object({
@@ -24,9 +25,9 @@ export type DownloadJobResult = z.infer<typeof DownloadJobResultSchema>;
 
 // Redis connection configuration
 const getRedisConnection = () => {
-    const host = process.env.REDIS_HOST || "localhost";
-    const port = parseInt(process.env.REDIS_PORT || "6379", 10);
-    const password = process.env.REDIS_PASSWORD || undefined;
+    const host = process.env.REDIS_HOST ?? "localhost";
+    const port = parseInt(process.env.REDIS_PORT ?? "6379", 10);
+    const password = process.env.REDIS_PASSWORD ?? undefined;
 
     return new Redis({
         host,
@@ -70,8 +71,8 @@ const getRandomDelay = (): number => {
     const enabled = process.env.DOWNLOAD_DELAY_ENABLED === "true";
     if (!enabled) return 0;
 
-    const min = parseInt(process.env.DOWNLOAD_DELAY_MIN_MS || "10000", 10);
-    const max = parseInt(process.env.DOWNLOAD_DELAY_MAX_MS || "200000", 10);
+    const min = parseInt(process.env.DOWNLOAD_DELAY_MIN_MS ?? "10000", 10);
+    const max = parseInt(process.env.DOWNLOAD_DELAY_MAX_MS ?? "200000", 10);
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
@@ -86,7 +87,7 @@ const processDownloadJob = async (
     const totalFiles = file_ids.length;
 
     console.log(
-        `[Queue Worker] Processing job ${jobId} with ${totalFiles} files`,
+        `[Queue Worker] Processing job ${jobId} with ${String(totalFiles)} files`,
     );
 
     let successCount = 0;
@@ -106,7 +107,7 @@ const processDownloadJob = async (
         const delaySec = (delay / 1000).toFixed(1);
 
         console.log(
-            `[Queue Worker] Job ${jobId}: Processing file ${fileId} (${i + 1}/${totalFiles}) - delay ${delaySec}s`,
+            `[Queue Worker] Job ${jobId}: Processing file ${String(fileId)} (${String(i + 1)}/${String(totalFiles)}) - delay ${delaySec}s`,
         );
 
         await sleep(delay);
@@ -116,16 +117,16 @@ const processDownloadJob = async (
 
         if (available) {
             successCount++;
-            const s3Key = `downloads/${fileId}.zip`;
+            const s3Key = `downloads/${String(fileId)}.zip`;
             const downloadUrl = `https://storage.example.com/${s3Key}?token=${crypto.randomUUID()}`;
             downloadUrls.push(downloadUrl);
             console.log(
-                `[Queue Worker] Job ${jobId}: File ${fileId} - SUCCESS (${progress}%)`,
+                `[Queue Worker] Job ${jobId}: File ${String(fileId)} - SUCCESS (${String(progress)}%)`,
             );
         } else {
             failedCount++;
             console.log(
-                `[Queue Worker] Job ${jobId}: File ${fileId} - NOT FOUND (${progress}%)`,
+                `[Queue Worker] Job ${jobId}: File ${String(fileId)} - NOT FOUND (${String(progress)}%)`,
             );
         }
     }
@@ -138,12 +139,12 @@ const processDownloadJob = async (
         downloadUrls: successCount > 0 ? downloadUrls : undefined,
         message:
             successCount > 0
-                ? `Successfully processed ${successCount}/${totalFiles} files`
-                : `All ${totalFiles} files failed to process`,
+                ? `Successfully processed ${String(successCount)}/${String(totalFiles)} files`
+                : `All ${String(totalFiles)} files failed to process`,
     };
 
     console.log(
-        `[Queue Worker] Job ${jobId} finished: ${successCount} success, ${failedCount} failed`,
+        `[Queue Worker] Job ${jobId} finished: ${String(successCount)} success, ${String(failedCount)} failed`,
     );
 
     return result;
@@ -161,12 +162,12 @@ export const downloadWorker = new Worker<DownloadJobData, DownloadJobResult>(
 
 // Worker event handlers
 downloadWorker.on("completed", (job) => {
-    console.log(`[Queue Worker] Job ${job.id} completed successfully`);
+    console.log(`[Queue Worker] Job ${String(job.id)} completed successfully`);
 });
 
 downloadWorker.on("failed", (job, err) => {
     console.error(
-        `[Queue Worker] Job ${job?.id} failed after ${job?.attemptsMade} attempts:`,
+        `[Queue Worker] Job ${String(job?.id)} failed after ${String(job?.attemptsMade)} attempts:`,
         err.message,
     );
 });
