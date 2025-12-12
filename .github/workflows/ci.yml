@@ -42,7 +42,11 @@ jobs:
           - 9001:9001
         options: --name minio --health-cmd "curl -f http://127.0.0.1:9000/minio/health/live" --health-interval 10s --health-timeout 5s --health-retries 5
 
-
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --name redis --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
       - name: Checkout
@@ -73,8 +77,11 @@ jobs:
           S3_SECRET_ACCESS_KEY: minioadmin
           S3_BUCKET_NAME: downloads
           S3_FORCE_PATH_STYLE: "true"
+          REDIS_HOST: redis
+          REDIS_PORT: "6379"
+          REDIS_PASSWORD: ""
           SENTRY_DSN: ""
-          OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318 # Mocked or Service
+          OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318
           REQUEST_TIMEOUT_MS: "30000"
           RATE_LIMIT_WINDOW_MS: "60000"
           RATE_LIMIT_MAX_REQUESTS: "100"
