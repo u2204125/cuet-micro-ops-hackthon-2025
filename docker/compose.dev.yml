@@ -16,8 +16,10 @@ services:
       - NODE_ENV=development
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://elasticsearch:4318 # Assuming OTLP endpoint for Elastic, adjust if needed
       - S3_ENDPOINT=http://delineate-minio:9000
+      - REDIS_HOST=delineate-redis
     depends_on:
       - delineate-minio
+      - delineate-redis
       - prometheus
       - grafana
       - elasticsearch
@@ -79,6 +81,14 @@ services:
       exit 0;
       "
 
+  delineate-redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+
   delineate-frontend:
     image: node:24-alpine
     working_dir: /app
@@ -90,3 +100,5 @@ services:
     environment:
       - VITE_API_URL=http://localhost:3000
 
+volumes:
+  redis-data:

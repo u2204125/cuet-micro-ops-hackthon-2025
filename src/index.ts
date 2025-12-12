@@ -13,6 +13,7 @@ import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import { rateLimiter } from "hono-rate-limiter";
+import { downloadQueue, shutdownQueue } from "./queue.ts";
 
 // Helper for optional URL that treats empty string as undefined
 const optionalUrl = z
@@ -42,6 +43,10 @@ const EnvSchema = z.object({
     .string()
     .default("*")
     .transform((val) => (val === "*" ? "*" : val.split(","))),
+  // Redis configuration (for job queue)
+  REDIS_HOST: z.string().default("localhost"),
+  REDIS_PORT: z.coerce.number().int().min(1).max(65535).default(6379),
+  REDIS_PASSWORD: z.string().optional(),
   // Download delay simulation (in milliseconds)
   DOWNLOAD_DELAY_MIN_MS: z.coerce.number().int().min(0).default(10000), // 10 seconds
   DOWNLOAD_DELAY_MAX_MS: z.coerce.number().int().min(0).default(200000), // 200 seconds
@@ -79,6 +84,7 @@ const app = new OpenAPIHono();
 // Request ID middleware - adds unique ID to each request
 app.use(async (c, next) => {
   const requestId = c.req.header("x-request-id") ?? crypto.randomUUID();
+  // @ts-expect-error - Hono context variables are not strictly typed with OpenAPIHono
   c.set("requestId", requestId);
   c.header("x-request-id", requestId);
   await next();
@@ -144,6 +150,7 @@ const ErrorResponseSchema = z
 // Error handler with Sentry
 app.onError((err, c) => {
   c.get("sentry").captureException(err);
+  // @ts-expect-error - Hono context variables are not strictly typed with OpenAPIHono
   const requestId = c.get("requestId") as string | undefined;
   return c.json(
     {
@@ -251,6 +258,32 @@ const DownloadStartResponseSchema = z
     message: z.string().openapi({ description: "Status message" }),
   })
   .openapi("DownloadStartResponse");
+
+// Job status schemas
+const JobStatusResponseSchema = z
+  .object({
+    jobId: z.string().openapi({ description: "Job identifier" }),
+    status: z
+      .enum(["queued", "processing", "completed", "failed"])
+      .openapi({ description: "Current job status" }),
+    progress: z
+      .number()
+      .int()
+      .min(0)
+      .max(100)
+      .openapi({ description: "Progress percentage (0-100)" }),
+    totalFiles: z.number().int().openapi({ description: "Total files to process" }),
+    result: z
+      .object({
+        successCount: z.number().int(),
+        failedCount: z.number().int(),
+        downloadUrls: z.array(z.string()).optional(),
+        message: z.string(),
+      })
+      .nullable()
+      .openapi({ description: "Job result (only when completed or failed)" }),
+  })
+  .openapi("JobStatusResponse");
 
 // Input sanitization for S3 keys - prevent path traversal
 const sanitizeS3Key = (fileId: number): string => {
@@ -488,9 +521,26 @@ const downloadCheckRoute = createRoute({
   },
 });
 
-app.openapi(downloadInitiateRoute, (c) => {
+app.openapi(downloadInitiateRoute, async (c) => {
   const { file_ids } = c.req.valid("json");
   const jobId = crypto.randomUUID();
+
+  // Add job to queue
+  await downloadQueue.add(
+    `download-${jobId}`,
+    {
+      file_ids,
+      jobId,
+    },
+    {
+      jobId, // Use our UUID as the Bull job ID for easy lookup
+    },
+  );
+
+  console.log(
+    `[API] Created download job ${jobId} with ${file_ids.length} files`,
+  );
+
   return c.json(
     {
       jobId,
@@ -568,6 +618,47 @@ const downloadStartRoute = createRoute({
   },
 });
 
+// Job status route - polling endpoint for queued downloads
+const jobStatusRoute = createRoute({
+  method: "get",
+  path: "/v1/download/jobs/:jobId",
+  tags: ["Download"],
+  summary: "Get download job status",
+  description:
+    "Poll this endpoint to check the status of a download job. Status progresses from 'queued' → 'processing' → 'completed' or 'failed'.",
+  request: {
+    params: z.object({
+      jobId: z.string().openapi({ description: "Job ID from /initiate" }),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Job status retrieved",
+      content: {
+        "application/json": {
+          schema: JobStatusResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Job not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 app.openapi(downloadStartRoute, async (c) => {
   const { file_id } = c.req.valid("json");
   const startTime = Date.now();
@@ -619,6 +710,61 @@ app.openapi(downloadStartRoute, async (c) => {
   }
 });
 
+app.openapi(jobStatusRoute, async (c) => {
+  const { jobId } = c.req.valid("param");
+
+  // Get job from queue
+  const job = await downloadQueue.getJob(jobId);
+
+  if (!job) {
+    return c.json(
+      {
+        error: "Not Found",
+        message: `Job ${jobId} not found`,
+        // @ts-expect-error - Hono context variables are not strictly typed with OpenAPIHono
+        requestId: c.get("requestId"),
+      },
+      404,
+    );
+  }
+
+  // Get job state and progress
+  const state = await job.getState();
+  const progress = job.progress as number;
+  const failedReason = job.failedReason;
+  const returnvalue = job.returnvalue;
+
+  // Map BullMQ state to our status
+  let status: "queued" | "processing" | "completed" | "failed";
+  if (state === "completed") {
+    status = "completed";
+  } else if (state === "failed") {
+    status = "failed";
+  } else if (state === "active") {
+    status = "processing";
+  } else {
+    status = "queued";
+  }
+
+  return c.json(
+    {
+      jobId,
+      status,
+      progress: typeof progress === "number" ? progress : 0,
+      totalFiles: job.data.file_ids.length,
+      result:
+        status === "completed" || status === "failed"
+          ? returnvalue || {
+            successCount: 0,
+            failedCount: job.data.file_ids.length,
+            message: failedReason || "Job failed",
+          }
+          : null,
+    },
+    200,
+  );
+});
+
 // OpenAPI spec endpoint (disabled in production)
 if (env.NODE_ENV !== "production") {
   app.doc("/openapi", {
@@ -652,7 +798,9 @@ const gracefulShutdown = (server: ServerType) => (signal: string) => {
       .catch((err: unknown) => {
         console.error("Error shutting down OpenTelemetry:", err);
       })
-      .finally(() => {
+      .finally(async () => {
+        // Shutdown queue system
+        await shutdownQueue();
         // Destroy S3 client
         s3Client.destroy();
         console.log("S3 client destroyed");
