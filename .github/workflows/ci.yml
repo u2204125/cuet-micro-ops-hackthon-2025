@@ -55,6 +55,9 @@ jobs:
 
       - name: Setup MinIO Bucket
         run: |
+          # Install curl (not available in node:24-slim)
+          apt-get update && apt-get install -y curl
+
           # Install mc (MinIO Client)
           curl https://dl.min.io/client/mc/release/linux-amd64/mc --create-dirs -o /usr/local/bin/mc
           chmod +x /usr/local/bin/mc
