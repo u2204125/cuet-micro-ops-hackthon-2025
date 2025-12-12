@@ -40,11 +40,21 @@ jobs:
         ports:
           - 9000:9000
           - 9001:9001
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
       redis:
         image: redis:7-alpine
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -52,6 +62,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Wait for services
+        run: |
+          echo "Waiting for MinIO to be ready..."
+          sleep 10
 
       - name: Setup MinIO Bucket
         run: |
@@ -62,9 +77,9 @@ jobs:
           curl https://dl.min.io/client/mc/release/linux-amd64/mc --create-dirs -o /usr/local/bin/mc
           chmod +x /usr/local/bin/mc
 
-          # Configure and create bucket
-          mc alias set myminio http://minio:9000 minioadmin minioadmin
-          mc mb myminio/downloads
+          # Configure and create bucket (use localhost since we're in the job container)
+          mc alias set myminio http://localhost:9000 minioadmin minioadmin
+          mc mb myminio/downloads || true
           mc anonymous set public myminio/downloads
 
       - name: Run E2E tests
